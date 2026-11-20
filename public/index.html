@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Channel Tracker</title>
+    <meta
+      name="description"
+      content="Dashboard pemantauan dan analisis pertumbuhan subscriber, views, likes, performa video, dan perbandingan sentimen komentar YouTube berbasis data publik."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="/vendor/jspdf.umd.min.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- Backdrop mobile sidebar -->
+      <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+      <!-- Sidebar Navigasi -->
+      <aside id="sidebar" class="sidebar" aria-label="Navigasi Utama">
+        <div class="sidebar-brand">
+          <svg class="brand-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect x="2" y="5" width="24" height="18" rx="5" fill="currentColor" />
+            <path d="M11.5 10.2L18 14L11.5 17.8V10.2Z" fill="#FFFFFF" />
+          </svg>
+          <span class="brand-name">ChannelTracker</span>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button type="button" class="nav-item active" data-view="overview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="3" width="7" height="9" rx="1.5" />
+              <rect x="14" y="3" width="7" height="5" rx="1.5" />
+              <rect x="14" y="12" width="7" height="9" rx="1.5" />
+              <rect x="3" y="16" width="7" height="5" rx="1.5" />
+            </svg>
+            <span>Ringkasan</span>
+          </button>
+
+          <button type="button" class="nav-item" data-view="analytics">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M3 17l6-6 4 4 8-8" />
+              <path d="M17 7h4v4" />
+            </svg>
+            <span>Analisis Channel</span>
+          </button>
+
+          <button type="button" class="nav-item" data-view="compare">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M18 20V10" />
+              <path d="M12 20V4" />
+              <path d="M6 20v-6" />
+            </svg>
+            <span>Perbandingan</span>
+          </button>
+
+          <button type="button" class="nav-item" data-view="videos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <path d="M10 9.5l5 2.5-5 2.5v-5z" />
+            </svg>
+            <span>Video &amp; Sentimen</span>
+          </button>
+
+          <button type="button" class="nav-item" data-view="logs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 6h16M4 12h16M4 18h10" />
+            </svg>
+            <span>Log Bot</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p class="sidebar-note">
+            Analisis pertumbuhan subscriber, performa video, dan sentimen komentar YouTube secara berkala.
+          </p>
+        </div>
+      </aside>
+
+      <!-- Area Konten Utama -->
+      <div class="main-wrapper">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button id="menuToggleBtn" type="button" class="icon-btn mobile-only" aria-label="Buka menu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 id="viewTitle" class="topbar-title">Ringkasan Channel</h1>
+          </div>
+
+          <div class="topbar-actions">
+            <!-- Pusat Notifikasi -->
+            <div class="notif-wrapper">
+              <button
+                id="notifBtn"
+                type="button"
+                class="icon-btn"
+                aria-label="Pusat Notifikasi"
+                aria-expanded="false"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span id="notifBadge" class="notif-badge hidden">0</span>
+              </button>
+
+              <div id="notifDropdown" class="notif-dropdown hidden" role="dialog" aria-label="Daftar Notifikasi">
+                <div class="notif-header">
+                  <span class="notif-heading">Notifikasi</span>
+                  <div class="notif-header-actions">
+                    <button id="browserNotifBtn" type="button" class="text-btn">
+                      Aktifkan Notif Browser
+                    </button>
+                    <button id="markAllReadBtn" type="button" class="text-btn">
+                      Tandai Dibaca
+                    </button>
+                  </div>
+                </div>
+                <div id="notifList" class="notif-list"></div>
+              </div>
+            </div>
+
+            <!-- Toggle Mode Gelap / Terang -->
+            <button id="themeToggleBtn" type="button" class="icon-btn" aria-label="Ganti mode tampilan">
+              <svg id="themeIconSun" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+              </svg>
+              <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </button>
+
+            <!-- Tombol Cek Sekarang -->
+            <button id="checkNowBtn" type="button" class="btn btn-primary">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6" />
+                <path d="M1 20v-6h6" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+              <span>Cek Sekarang</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Banner Peringatan API Key / Toast -->
+        <div id="apiWarningBanner" class="alert-banner hidden" role="alert">
+          <div class="alert-content">
+            <strong>Konfigurasi Diperlukan:</strong>
+            <span>
+              <code>YOUTUBE_API_KEY</code> belum diatur di file <code>.env</code>. Tambahkan API key YouTube Data API v3 untuk mengambil data channel dan video secara langsung.
+            </span>
+          </div>
+        </div>
+
+        <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+        <main class="content-area">
+          <!-- VIEW 1: RINGKASAN -->
+          <section id="view-overview" class="view-section active">
+            <!-- Kartu Ringkasan Total Akumulatif Seluruh Channel -->
+            <div class="kpi-grid kpi-grid-flush" aria-label="Ringkasan Akumulatif Seluruh Channel">
+              <div class="kpi-card">
+                <div class="kpi-label">Total Subscriber Gabungan</div>
+                <div id="overviewTotalSubscribers" class="kpi-value tabular-nums">0</div>
+                <div id="overviewTotalSubsMeta" class="kpi-meta tabular-nums">0 channel dipantau</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Total Views Gabungan</div>
+                <div id="overviewTotalViews" class="kpi-value tabular-nums">0</div>
+                <div id="overviewTotalViewsMeta" class="kpi-meta tabular-nums">Akumulasi semua channel</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Total Video Publik</div>
+                <div id="overviewTotalVideos" class="kpi-value tabular-nums">0</div>
+                <div id="overviewTotalVideosMeta" class="kpi-meta tabular-nums">Di seluruh daftar pantauan</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Total Likes Terlacak</div>
+                <div id="overviewTotalLikes" class="kpi-value tabular-nums">0</div>
+                <div id="overviewTotalLikesMeta" class="kpi-meta tabular-nums">Dari video terbaru terpantau</div>
+              </div>
+            </div>
+
+            <!-- Form Tambah Channel -->
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Tambah Channel ke Daftar Pantauan</h2>
+                  <p class="panel-subtitle">
+                    Masukkan URL channel, <code>@handle</code>, atau ID channel (<code>UC...</code>). Anda juga dapat menetapkan target subscriber.
+                  </p>
+                </div>
+              </div>
+              <form id="addChannelForm" class="add-form">
+                <div class="form-field form-field-grow">
+                  <label for="channelInput">URL / @handle / ID Channel</label>
+                  <input
+                    id="channelInput"
+                    type="text"
+                    placeholder="Contoh: @GoogleDevelopers atau https://youtube.com/@mkbhd"
+                    required
+                  />
+                </div>
+                <div class="form-field form-field-target">
+                  <label for="targetInput">Target Subscriber (Opsional)</label>
+                  <input
+                    id="targetInput"
+                    type="number"
+                    min="0"
+                    step="100"
+                    placeholder="Contoh: 1000000"
+                  />
+                </div>
+                <div class="form-submit">
+                  <button id="addChannelBtn" type="submit" class="btn btn-primary">
+                    Tambah Channel
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Grid Kartu Channel -->
+            <div class="section-header-row">
+              <div>
+                <h2 class="section-title">Channel Terpantau</h2>
+                <p id="channelsSummaryText" class="section-subtitle">Memuat daftar channel...</p>
+              </div>
+              <div class="toolbar-group">
+                <input
+                  id="channelSearchInput"
+                  type="search"
+                  class="search-input"
+                  placeholder="Cari channel, @handle, atau ID..."
+                  aria-label="Cari channel terpantau"
+                />
+              </div>
+            </div>
+            <div id="channelsGrid" class="channels-grid"></div>
+
+            <!-- Daftar Video Terbaru dari Semua Channel -->
+            <div class="section-header-row">
+              <div>
+                <h2 class="section-title">Video Terbaru</h2>
+                <p class="section-subtitle">Rilisan terbaru dari seluruh channel yang dipantau</p>
+              </div>
+              <button type="button" class="btn btn-secondary" data-jump="videos">
+                Analisis Performa &amp; Sentimen
+              </button>
+            </div>
+            <div id="latestVideosGrid" class="videos-grid"></div>
+          </section>
+
+          <!-- VIEW 2: ANALISIS CHANNEL -->
+          <section id="view-analytics" class="view-section">
+            <div class="toolbar-row">
+              <div class="toolbar-group">
+                <label for="analyticsChannelSelect" class="sr-only">Pilih Channel</label>
+                <select id="analyticsChannelSelect" class="select-input"></select>
+
+                <div class="segmented-control" role="tablist" aria-label="Rentang waktu grafik">
+                  <button type="button" class="seg-btn" data-range="7d">7 Hari</button>
+                  <button type="button" class="seg-btn active" data-range="30d">30 Hari</button>
+                  <button type="button" class="seg-btn" data-range="all">Semua</button>
+                </div>
+              </div>
+
+              <div class="toolbar-group">
+                <form id="updateTargetForm" class="inline-target-form">
+                  <input
+                    id="editTargetInput"
+                    type="number"
+                    min="0"
+                    placeholder="Target subscriber"
+                    aria-label="Target subscriber"
+                  />
+                  <button type="submit" class="btn btn-secondary">Simpan Target</button>
+                </form>
+                <button id="exportCsvBtn" type="button" class="btn btn-secondary">
+                  Ekspor CSV
+                </button>
+                <button id="exportPdfBtn" type="button" class="btn btn-primary">
+                  Unduh Laporan PDF
+                </button>
+              </div>
+            </div>
+
+            <div id="analyticsEmpty" class="empty-state hidden">
+              <p>Pilih atau tambahkan minimal satu channel untuk melihat analisis pertumbuhan.</p>
+            </div>
+
+            <div id="analyticsContent">
+              <!-- KPI 5 Kolom -->
+              <div class="kpi-grid kpi-grid-5">
+                <div class="kpi-card">
+                  <div class="kpi-label">Pertumbuhan Subscriber</div>
+                  <div id="kpiDailySubs" class="kpi-value tabular-nums">-</div>
+                  <div id="kpiSubTrend" class="kpi-meta">-</div>
+                </div>
+                <div class="kpi-card">
+                  <div class="kpi-label">Proyeksi 30 Hari ke Depan</div>
+                  <div id="kpiProjection30d" class="kpi-value tabular-nums">-</div>
+                  <div id="kpiProjection30dMeta" class="kpi-meta">-</div>
+                </div>
+                <div class="kpi-card">
+                  <div class="kpi-label">Pertumbuhan Views</div>
+                  <div id="kpiDailyViews" class="kpi-value tabular-nums">-</div>
+                  <div id="kpiViewsTrend" class="kpi-meta">-</div>
+                </div>
+                <div class="kpi-card">
+                  <div class="kpi-label">Proyeksi Target (Regresi Linear)</div>
+                  <div id="kpiProjectionDate" class="kpi-value tabular-nums">-</div>
+                  <div id="kpiProjectionMeta" class="kpi-meta">-</div>
+                </div>
+                <div class="kpi-card">
+                  <div class="kpi-label">Milestone &amp; Likes Terlacak</div>
+                  <div id="kpiMilestone" class="kpi-value tabular-nums">-</div>
+                  <div id="kpiMilestoneMeta" class="kpi-meta">-</div>
+                </div>
+              </div>
+
+              <!-- Grafik Riwayat Subscriber & Views -->
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <h2 class="panel-title">Riwayat Subscriber &amp; Views</h2>
+                    <p id="historyChartSubtitle" class="panel-subtitle">
+                      Grafik snapshot historis beserta penanda lonjakan subscriber
+                    </p>
+                  </div>
+                  <div class="segmented-control" role="tablist" aria-label="Metrik grafik riwayat">
+                    <button type="button" class="seg-btn active" data-history-metric="subscribers">
+                      Subscriber
+                    </button>
+                    <button type="button" class="seg-btn" data-history-metric="views">
+                      Total Views
+                    </button>
+                  </div>
+                </div>
+                <div class="chart-box">
+                  <canvas id="historyChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Grid 2 Kolom: Korelasi Lonjakan + Jam Upload Terbaik -->
+              <div class="two-col-grid">
+                <div class="panel">
+                  <div class="panel-header">
+                    <div>
+                      <h2 class="panel-title">Korelasi Lonjakan &amp; Video</h2>
+                      <p class="panel-subtitle">
+                        Hari dengan pertumbuhan &gt; 2x rata-rata 7 hari dan video yang diupload di sekitar waktu tersebut
+                      </p>
+                    </div>
+                  </div>
+                  <div id="spikesContainer" class="spikes-list"></div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-header">
+                    <div>
+                      <h2 class="panel-title">Jam Upload Terbaik (WIB)</h2>
+                      <p id="bestHoursSummary" class="panel-subtitle">
+                        Rata-rata views/jam berdasarkan waktu publikasi historis
+                      </p>
+                    </div>
+                  </div>
+                  <div class="chart-box chart-box-sm">
+                    <canvas id="uploadHoursChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Heatmap Aktivitas Penonton (Hari x Jam WIB) -->
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <h2 class="panel-title">Heatmap Aktivitas Penonton (Hari &amp; Jam WIB)</h2>
+                    <p id="heatmapSummary" class="panel-subtitle">
+                      Pola performa penonton berdasarkan hari dan jam publikasi video untuk menentukan jadwal upload terbaik
+                    </p>
+                  </div>
+                  <div class="toolbar-group">
+                    <div class="segmented-control" role="tablist" aria-label="Metrik heatmap penonton">
+                      <button type="button" class="seg-btn active" data-heatmap-metric="viewsPerHour">
+                        Views / Jam
+                      </button>
+                      <button type="button" class="seg-btn" data-heatmap-metric="engagement">
+                        Engagement (%)
+                      </button>
+                    </div>
+                    <div class="heatmap-legend" aria-label="Skala intensitas heatmap">
+                      <span>Rendah</span>
+                      <span class="heatmap-swatch" data-level="0" title="Belum ada upload"></span>
+                      <span class="heatmap-swatch" data-level="1"></span>
+                      <span class="heatmap-swatch" data-level="2"></span>
+                      <span class="heatmap-swatch" data-level="3"></span>
+                      <span class="heatmap-swatch" data-level="4"></span>
+                      <span>Tinggi</span>
+                    </div>
+                  </div>
+                </div>
+                <div id="audienceHeatmapContainer" class="heatmap-wrap"></div>
+                <div class="heatmap-footer">
+                  <div id="heatmapBestSlots" class="heatmap-best-slots">
+                    Memuat rekomendasi waktu upload terbaik...
+                  </div>
+                  <div id="heatmapCellDetail" class="heatmap-cell-detail">
+                    Arahkan kursor atau klik kotak hari &amp; jam untuk melihat detail performa.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabel Peringkat Video Channel -->
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <h2 class="panel-title">Peringkat Video Berdasarkan Views / Jam</h2>
+                    <p id="channelVideosSubtitle" class="panel-subtitle">
+                      Performa kecepatan views, jumlah like, dan rasio interaksi sejak waktu upload
+                    </p>
+                  </div>
+                  <div class="toolbar-group">
+                    <input
+                      id="channelVideosSearchInput"
+                      type="search"
+                      class="search-input"
+                      placeholder="Cari judul video..."
+                      aria-label="Cari judul video channel"
+                    />
+                    <div class="segmented-control" role="tablist" aria-label="Filter video channel">
+                      <button type="button" class="seg-btn active" data-channel-video-filter="all">
+                        Semua Video
+                      </button>
+                      <button type="button" class="seg-btn" data-channel-video-filter="viral">
+                        Video Viral
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Video</th>
+                        <th class="num">Views</th>
+                        <th class="num">Likes</th>
+                        <th class="num">Views / Jam</th>
+                        <th class="num">Engagement</th>
+                      </tr>
+                    </thead>
+                    <tbody id="channelVideosTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- VIEW 3: PERBANDINGAN ANTAR CHANNEL -->
+          <section id="view-compare" class="view-section">
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Perbandingan Pertumbuhan Antar Channel</h2>
+                  <p class="panel-subtitle">
+                    Pilih 2 atau lebih channel untuk dibandingkan dalam satu grafik dan tabel ringkasan
+                  </p>
+                </div>
+                <div class="segmented-control" role="tablist" aria-label="Mode perbandingan">
+                  <button type="button" class="seg-btn active" data-compare-metric="subscribers">
+                    Subscriber
+                  </button>
+                  <button type="button" class="seg-btn" data-compare-metric="views">
+                    Views
+                  </button>
+                  <button type="button" class="seg-btn" data-compare-metric="growthPct">
+                    Pertumbuhan (%)
+                  </button>
+                </div>
+              </div>
+
+              <div id="compareCheckboxes" class="checkbox-row"></div>
+
+              <div class="chart-box">
+                <canvas id="compareChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">Ringkasan Metrik Channel</h2>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Channel</th>
+                      <th class="num">Subscriber</th>
+                      <th class="num">Total Views</th>
+                      <th class="num">Likes Terlacak</th>
+                      <th class="num">Pertumbuhan / Hari</th>
+                    </tr>
+                  </thead>
+                  <tbody id="compareTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- VIEW 4: VIDEO & PERBANDINGAN SENTIMEN KOMENTAR -->
+          <section id="view-videos" class="view-section">
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Perbandingan Sentimen Komentar Video</h2>
+                  <p class="panel-subtitle">
+                    Pilih hingga 6 video di bawah ini untuk menganalisis komentar publik (Indonesia &amp; Inggris) dan membandingkan rasio sentimennya secara visual
+                  </p>
+                </div>
+                <div class="toolbar-group">
+                  <button id="compareSentimentBtn" type="button" class="btn btn-primary">
+                    Bandingkan Sentimen (<span id="selectedVideoCount">0</span>)
+                  </button>
+                  <button id="refreshSentimentBtn" type="button" class="btn btn-secondary">
+                    Analisis Ulang
+                  </button>
+                </div>
+              </div>
+
+              <div id="sentimentResultArea" class="sentiment-result-area hidden">
+                <div class="chart-box chart-box-sm">
+                  <canvas id="sentimentCompareChart"></canvas>
+                </div>
+                <div id="sentimentCardsGrid" class="sentiment-cards-grid"></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Tren Sentimen Komentar Mingguan Setelah Rilis</h2>
+                  <p id="sentimentTrendSummary" class="panel-subtitle">
+                    Lihat perubahan sentimen penonton per minggu sejak video dirilis menggunakan grafik garis
+                  </p>
+                </div>
+                <div class="toolbar-group">
+                  <select id="sentimentTrendVideoSelect" class="select-input" aria-label="Pilih video untuk tren sentimen">
+                    <option value="">Pilih video...</option>
+                  </select>
+                  <div class="segmented-control" role="tablist" aria-label="Metrik tren sentimen">
+                    <button type="button" class="seg-btn active" data-trend-metric="score">
+                      Skor (-100..+100)
+                    </button>
+                    <button type="button" class="seg-btn" data-trend-metric="pct">
+                      Persentase (%)
+                    </button>
+                  </div>
+                  <button id="loadSentimentTrendBtn" type="button" class="btn btn-primary btn-sm">
+                    Muat Tren
+                  </button>
+                </div>
+              </div>
+
+              <div id="sentimentTrendEmpty" class="empty-state">
+                Pilih video dari daftar di atas lalu klik <strong>Muat Tren</strong> untuk melihat grafik garis perubahan sentimen komentar per minggu setelah rilis.
+              </div>
+              <div id="sentimentTrendChartWrap" class="chart-box chart-box-sm hidden">
+                <canvas id="sentimentTrendChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Daftar Video Terlacak (Urutan Views / Jam)</h2>
+                  <p id="allVideosSubtitle" class="panel-subtitle">
+                    Centang video untuk dibandingkan sentimen komentarnya
+                  </p>
+                </div>
+                <div class="toolbar-group">
+                  <input
+                    id="allVideosSearchInput"
+                    type="search"
+                    class="search-input"
+                    placeholder="Cari judul video atau channel..."
+                    aria-label="Cari video terlacak"
+                  />
+                  <div class="segmented-control" role="tablist" aria-label="Filter Video Viral">
+                    <button type="button" class="seg-btn active" data-all-video-filter="all">
+                      Semua Video
+                    </button>
+                    <button type="button" class="seg-btn" data-all-video-filter="viral">
+                      Video Viral
+                    </button>
+                  </div>
+                  <select id="videosFilterCategory" class="select-input" aria-label="Filter kategori video">
+                    <option value="">Semua Kategori</option>
+                  </select>
+                  <select id="videosFilterChannel" class="select-input" aria-label="Filter channel video">
+                    <option value="">Semua Channel</option>
+                  </select>
+                </div>
+              </div>
+              <div id="categoryCompareStrip" class="category-compare-strip hidden"></div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th class="col-check">Pilih</th>
+                      <th>Video</th>
+                      <th>Channel</th>
+                      <th>Kategori</th>
+                      <th class="num">Views</th>
+                      <th class="num">Likes</th>
+                      <th class="num">Komentar</th>
+                      <th class="num">Views / Jam</th>
+                      <th class="num">Skor Sentimen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="allVideosTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- VIEW 5: LOG BOT -->
+          <section id="view-logs" class="view-section">
+            <div class="kpi-grid kpi-grid-3">
+              <div class="kpi-card">
+                <div class="kpi-label">Status API Key</div>
+                <div id="statusApiKey" class="kpi-value">-</div>
+                <div class="kpi-meta">YouTube Data API v3</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Jadwal Bot (Cron)</div>
+                <div id="statusCron" class="kpi-value font-mono">-</div>
+                <div id="statusLastCheck" class="kpi-meta">-</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Optimasi Kuota</div>
+                <div class="kpi-value">Batch + Playlist</div>
+                <div class="kpi-meta">channels.list (50 ID/unit) &amp; playlistItems.list (1 unit)</div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Catatan Aktivitas &amp; Error Bot</h2>
+                  <p class="panel-subtitle">30 entri log terbaru dari penjadwal dan endpoint API</p>
+                </div>
+                <button id="refreshLogsBtn" type="button" class="btn btn-secondary">Muat Ulang</button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Waktu</th>
+                      <th>Level</th>
+                      <th>Sumber</th>
+                      <th>Pesan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="logsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

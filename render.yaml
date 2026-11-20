@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: youtube-channel-tracker
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CHECK_INTERVAL
+        value: "*/10 * * * *"
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: DB_PATH
+        value: ./data/tracker.db

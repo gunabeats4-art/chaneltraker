@@ -1,0 +1,6 @@
+{
+  "name": "YouTube Channel Tracker",
+  "description": "Dashboard pemantauan dan analisis pertumbuhan subscriber, views, likes, performa video, dan perbandingan sentimen komentar YouTube berbasis data publik.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
